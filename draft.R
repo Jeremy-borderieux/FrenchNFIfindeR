@@ -1,5 +1,7 @@
 
-download_NFI<-function(dir=getwd(),nfi_url="https://inventaire-forestier.ign.fr/dataifn/data/export_dataifn_2005_2020.zip"){
+get_latest_url<-function()return("https://inventaire-forestier.ign.fr/dataifn/data/export_dataifn_2005_2020.zip")
+get_latest_url()
+download_NFI<-function(dir=getwd(),nfi_url=get_latest_url()){
   dir.create(file.path(dir,"NFI_data"),showWarnings = F)
   dir.create(file.path(dir,"NFI_data","Raw_data"),showWarnings = F)
   path_zip<-file.path(dir,"NFI_data","Raw_data","data_NFI.zip")
@@ -11,12 +13,10 @@ download_NFI<-function(dir=getwd(),nfi_url="https://inventaire-forestier.ign.fr/
 
 download_NFI()
 
-read_NFI_from_zip<-function(){}
-
 library(data.table)
+library(stringr)
 
-
-get_NFI<-function(dir=getwd(),nfi_url="https://inventaire-forestier.ign.fr/dataifn/data/export_dataifn_2005_2020.zip",write_csv=F,visit=1){
+get_NFI<-function(dir=getwd(),nfi_url=nfi_url=get_latest_url(),write_csv=F,export_to_env=T,visit=1){
 
   ## download
   path_data<-file.path(dir,"NFI_data")
@@ -33,11 +33,11 @@ get_NFI<-function(dir=getwd(),nfi_url="https://inventaire-forestier.ign.fr/datai
 
 
   ## reading them
-  NFI_ecologie<-data.table(read.table(unz(path_zip,"ECOLOGIE.csv"),sep=";",header=T))
-  NFI_plot_info<-data.table(read.table(unz(path_zip,"PLACETTE.csv"),sep=";",header=T))
-  NFI_arbres<-data.table(read.table(unz(path_zip,"ARBRE.csv"),sep=";",header=T))
-  NFI_cover<-data.table(read.table(unz(path_zip,"COUVERT.csv"),sep=";",header=T))
-  NFI_flora<-data.table(read.table(unz(path_zip,"FLORE.csv"),sep=";",header=T))
+  NFI_ecologie<-data.table(read.table(unz(path_zip,"ECOLOGIE.csv"),sep=";",header=T,stringsAsFactors =F))
+  NFI_plot_info<-data.table(read.table(unz(path_zip,"PLACETTE.csv"),sep=";",header=T,stringsAsFactors =F))
+  NFI_arbres<-data.table(read.table(unz(path_zip,"ARBRE.csv"),sep=";",header=T,stringsAsFactors =F))
+  NFI_cover<-data.table(read.table(unz(path_zip,"COUVERT.csv"),sep=";",header=T,stringsAsFactors =F))
+  NFI_flora<-data.table(read.table(unz(path_zip,"FLORE.csv"),sep=";",header=T,stringsAsFactors =F))
 
   if( !any(c(visit==1 , visit==2 , visit==c(1,2)) ))stop("Need a valid visit code")
 
@@ -84,7 +84,38 @@ get_NFI<-function(dir=getwd(),nfi_url="https://inventaire-forestier.ign.fr/datai
 
   NFI_dendro[, DgTotFinal:=sqrt(4*basal_area/(pi*Ntot))*100]
 
-  if(write_csv){
+
+  ## getting the metada for taxonomic purposes
+  meta_data<-data.table(read.table(unz(path_zip,"metadonnees.csv"),sep=";",skip=17,fill=T,quote="",row.names = NULL,encoding = "UTF-8",stringsAsFactors =F))
+  colnames(meta_data)<-c("code","value","description","advanced_description")
+
+  flora_taxo<-meta_data[code=="CDREF13",]
+  colnames(flora_taxo)[3]<-c("species_name")
+  flora_taxo[,French_vernacular_name:=stringr::str_detect(species_name," \\(.*")]
+  flora_taxo[,French_vernacular_name:=ifelse(French_vernacular_name,stringr::str_extract_all(species_name," \\(.*",simplify = T),NA)]
+  flora_taxo[,French_vernacular_name:=stringr::str_remove_all(French_vernacular_name," \\(")]
+  flora_taxo[,French_vernacular_name:=stringr::str_remove_all(French_vernacular_name,"\\)")]
+  flora_taxo[,species_name:=stringr::str_remove_all(species_name," \\(.*")]
+  flora_taxo[,value:=as.numeric(value)]
+
+  NFI_flora<-merge(NFI_flora,flora_taxo[,c("value","species_name")],by.x="cd_ref",by.y="value")
+
+
+
+  tree_NFI_codetaxo<-data.table(read.table(unz(path_zip,"espar-cdref13.csv"),sep=";",quote="",skip=1,row.names = NULL,encoding = "UTF-8",stringsAsFactors =F))
+  colnames(tree_NFI_codetaxo)<-c("espar","french_name","cd_ref","species_name")
+  tree_NFI_codetaxo[,espar:=ifelse(nchar(espar)==1,paste0("0",espar),espar)]
+
+  NFI_arbres<-merge(NFI_arbres,tree_NFI_codetaxo[,c("espar","species_name","french_name")],by="espar",all.x = T)
+
+  NFI_plot_info<<-NFI_plot_info[order(idp),]
+  NFI_ecologie<<-NFI_ecologie[order(idp),]
+  NFI_arbres<<-NFI_arbres[order(idp),]
+  NFI_dendro<<-NFI_dendro[order(idp),]
+  NFI_cover<<-NFI_cover[order(idp),]
+  NFI_flora<<-NFI_flora[order(idp),]
+
+    if(write_csv){
   write.table(NFI_plot_info,file=file.path(path_data,"plot_info.csv"),sep=";",row.names = F)
   write.table(NFI_ecologie,file=file.path(path_data,"ecology.csv"),sep=";",row.names = F)
   write.table(NFI_arbres,file=file.path(path_data,"tree.csv"),sep=";",row.names = F)
@@ -93,13 +124,42 @@ get_NFI<-function(dir=getwd(),nfi_url="https://inventaire-forestier.ign.fr/datai
   write.table(NFI_flora,file=file.path(path_data,"flora.csv"),sep=";",row.names = F)
   }
 
+  if(export_to_env){
+    NFI_plot_info<<-NFI_plot_info[order(idp),]
+    NFI_ecologie<<-NFI_ecologie[order(idp),]
+    NFI_arbres<<-NFI_arbres[order(idp),]
+    NFI_dendro<<-NFI_dendro[order(idp),]
+    NFI_cover<<-NFI_cover[order(idp),]
+    NFI_flora<<-NFI_flora[order(idp),]
+    }
 
-
+ return(NULL)
 
 }
 
 get_NFI(visit = 1)
 library(FrenchNFIfindeR)
 
-test_meta<-data.table(read.table(unz(file.path(getwd(),"NFI_data","Raw_data","data_NFI.zip"),"metadonnees.csv"),sep=";",skip=17,fill=T,row.names = NULL,encoding = "UTF-8"))
+meta_data<-data.table(read.table(unz(file.path(getwd(),"NFI_data","Raw_data","data_NFI.zip"),"metadonnees.csv"),sep=";",skip=17,fill=T,quote="",row.names = NULL,encoding = "UTF-8",stringsAsFactors =F))
+dim(meta_data)
+colnames(meta_data)<-c("code","value","description","advanced_description")
+flora_taxo<-meta_data[code=="CDREF13",]
 
+flora_taxo[,French_vernacular_name:=stringr::str_detect(description," \\(.*")]
+flora_taxo[,French_vernacular_name:=ifelse(French_vernacular_name,stringr::str_extract_all(description," \\(.*",simplify = T),NA)]
+flora_taxo[,French_vernacular_name:=stringr::str_remove_all(French_vernacular_name," \\(")]
+flora_taxo[,French_vernacular_name:=stringr::str_remove_all(French_vernacular_name,"\\)")]
+flora_taxo[,description:=stringr::str_remove_all(description," \\(.*")]
+flora_taxo[,value=as.numeric(value)]
+
+tree_NFI_codetaxo<-data.table(read.table(unz(file.path(getwd(),"NFI_data","Raw_data","data_NFI.zip"),"espar-cdref13.csv"),sep=";",quote="",skip=1,row.names = NULL,encoding = "UTF-8",stringsAsFactors =F))
+colnames(tree_NFI_codetaxo)<-c("espar","french_name","cd_ref","species_name")
+tree_NFI_codetaxo[,espar:=ifelse(nchar(espar)==1,paste0("0",espar),espar)]
+tree_code
+
+NFI_arbres[,table(veget5)]
+
+usethis::use_package("stringr")
+
+nrow(NFI_arbres)
+sum(NFI_arbres$espar%in%meta_data[code=="ESPAR1",]$value)
