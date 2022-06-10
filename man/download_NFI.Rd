@@ -7,7 +7,9 @@
 download_NFI(dir = getwd(), nfi_url = get_latest_url())
 }
 \arguments{
-\item{nfi_url}{The url}
+\item{dir}{The path indicated where the raw NFI is gonna be stored}
+
+\item{nfi_url}{The NFI download NFI, a default value is provided}
 }
 \value{
 The path to where the data have been downloaded
