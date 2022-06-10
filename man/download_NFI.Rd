@@ -20,9 +20,6 @@ Download the latest NFI
 \details{
 The raw downloaded data are stored inside the NFI_data/Raw_data folder
 }
-\note{
-
-}
 \examples{
 \dontrun{
 download_NFI(dir=getwd())

@@ -5,13 +5,11 @@ get_latest_url<-function()return("https://inventaire-forestier.ign.fr/dataifn/da
 
 
 #' @title Download the latest NFI
-#' @descriptions Download the latest French NFI database
 #' @details The raw downloaded data are stored inside the NFI_data/Raw_data folder
 #' @return The path to where the data have been downloaded
 #' @author J Borderieux (jeremy.borderieux@@agroparistech.fr)
 #' @param dir The path indicated where the raw NFI is gonna be stored
 #' @param nfi_url The NFI download NFI, a default value is provided
-#' @note
 #' @seealso  {\link[=get_NFI]{get_NFI}}
 #' @references https://inventaire-forestier.ign.fr/
 #' @examples \dontrun{
@@ -30,7 +28,6 @@ download_NFI<-function(dir=getwd(),
 
 
 #' @title Get and format the NFI
-#' @descriptions get to csv files, or to you R environment the NFI data
 #' @details The raw downloaded data are stored inside the NFI_data/Raw_data folder
 #' The NFI is seperated into different csv files or R data.table, that you can merge by idp
 #' \itemize{
@@ -49,7 +46,6 @@ download_NFI<-function(dir=getwd(),
 #' @param write_csv Logical, should the NFI be return in .csv files in the NFI_data folder
 #' @param export_to_env Logical, should the NFI be directly imported into the global environement
 #' @param visit 1 to get the first NFI measure (default), 2 for the revisist or c(1,2) for both
-#' @note
 #' @references https://inventaire-forestier.ign.fr/
 #' @examples \dontrun{
 #' get_NFI(dir=getwd(),write_csv=F,export_to_env=T,visit=1)

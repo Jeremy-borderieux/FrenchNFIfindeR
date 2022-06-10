@@ -41,9 +41,6 @@ The NFI is seperated into different csv files or R data.table, that you can merg
 \item{\strong{NFI_flora}}{ Florisitic surveys of the NFI plot}
 }
 }
-\note{
-
-}
 \examples{
 \dontrun{
 get_NFI(dir=getwd(),write_csv=F,export_to_env=T,visit=1)
