@@ -154,7 +154,7 @@ get_NFI<-function(dir=getwd(),
   tree_NFI_codetaxo[,espar:=ifelse(nchar(espar)==1,paste0("0",espar),espar)]
 
   NFI_arbres<-merge(NFI_arbres,tree_NFI_codetaxo[,c("espar","species_name","french_name")],by="espar",all.x = T)
-
+  NFI_arbres<-NFI_arbres[veget!="",]
   # NFI_plot_info<<-NFI_plot_info[order(idp),]
   # NFI_ecologie<<-NFI_ecologie[order(idp),]
   # NFI_arbres<<-NFI_arbres[order(idp),]
