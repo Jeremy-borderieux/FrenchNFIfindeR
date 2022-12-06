@@ -78,7 +78,7 @@ get_NFI<-function(dir=getwd(),
   NFI_cover<-data.table(read.table(unz(path_zip,"COUVERT.csv"),sep=";",header=T,stringsAsFactors =F))
   NFI_flora<-data.table(read.table(unz(path_zip,"FLORE.csv"),sep=";",header=T,stringsAsFactors =F))
 
-  if( !any(c(visit==1 , visit==2 , visit==c(1,2)) ))stop("Need a valid visit code")
+  if(!any(c(visit==1 , visit==2 , visit==c(1,2))))stop("Need a valid visit code")
 
   colnames(NFI_ecologie)<-tolower(colnames(NFI_ecologie));colnames(NFI_ecologie)[1]<-"campagne";NFI_ecologie[,x:=NULL]
   colnames(NFI_plot_info)<-tolower(colnames(NFI_plot_info));colnames(NFI_plot_info)[1]<-"campagne";NFI_plot_info[,x:=NULL]
@@ -87,6 +87,8 @@ get_NFI<-function(dir=getwd(),
   colnames(NFI_flora)<-tolower(colnames(NFI_flora));colnames(NFI_flora)[1]<-"campagne";NFI_flora[,x:=NULL]
 
   NFI_plot_info<-NFI_plot_info[visite%in%visit,]
+  NFI_plot_info[,campagne_init := floor(idp/100000)+2005]
+
 
   canopy_cover<-NFI_cover[strate=="R",.(couverttot=sum(tcl),couverttot_abs=sum(tca)),by=idp]
   #
@@ -104,10 +106,7 @@ get_NFI<-function(dir=getwd(),
   NFI_arbres[, htot := ifelse(is.na(htot), mean(htot, na.rm = TRUE), htot), by = c("idp", "espar", "dimess")]
   NFI_arbres[, ir5 := ifelse(is.na(ir5), mean(ir5, na.rm = TRUE), ir5), by = c("idp", "espar", "dimess")]
 
-  NFI_arbres<-NFI_arbres[veget=="0",]
-
-
-  NFI_arbres[,campagne_2 := floor(idp/100000)+2005]
+  NFI_arbres[,campagne_init := floor(idp/100000)+2005]
   # Definition d'une classe de sous-?tage
   NFI_arbres[,strate:=ifelse(htot>0.5*max(htot, na.rm = T), "etagePrincipal", "sousEtage"),keyby=idp]
 
@@ -116,8 +115,17 @@ get_NFI<-function(dir=getwd(),
   NFI_arbres[,gFinal:=c13*c13*w/(4*pi)]
   NFI_arbres[,gInitial:=pi/10000*(c13/(2*pi)-ir5/10)^2*w]
 
+  ## selection arbres vivants pour la dendro
+  NFI_arbres_vivants<-NFI_arbres[veget%in%c("0","Z"),]
+
+  ## inclure l'état de l'arbre en revisite
+  NFI_arbres_revisite<-NFI_arbres[veget=="",]
+  NFI_arbres<-merge(NFI_arbres,NFI_arbres_revisite[,c("idp","a","veget5")],by=c("idp","a"),all.x = T,suffixes = c("","_tmp"))
+  NFI_arbres[,veget5:=veget5_tmp]
+  NFI_arbres[,veget5_tmp:=NULL]
+
   ### Valeurs dendro ?chelle placette
-  NFI_dendro <- NFI_arbres[,.(basal_area=sum(gFinal),
+  NFI_dendro <- NFI_arbres_vivants[,.(basal_area=sum(gFinal),
                               Ntot=sum(w)),  by = idp]
 
 
@@ -147,12 +155,12 @@ get_NFI<-function(dir=getwd(),
 
   NFI_arbres<-merge(NFI_arbres,tree_NFI_codetaxo[,c("espar","species_name","french_name")],by="espar",all.x = T)
 
-  NFI_plot_info<<-NFI_plot_info[order(idp),]
-  NFI_ecologie<<-NFI_ecologie[order(idp),]
-  NFI_arbres<<-NFI_arbres[order(idp),]
-  NFI_dendro<<-NFI_dendro[order(idp),]
-  NFI_cover<<-NFI_cover[order(idp),]
-  NFI_flora<<-NFI_flora[order(idp),]
+  # NFI_plot_info<<-NFI_plot_info[order(idp),]
+  # NFI_ecologie<<-NFI_ecologie[order(idp),]
+  # NFI_arbres<<-NFI_arbres[order(idp),]
+  # NFI_dendro<<-NFI_dendro[order(idp),]
+  # NFI_cover<<-NFI_cover[order(idp),]
+  # NFI_flora<<-NFI_flora[order(idp),]
 
   if(write_csv){
     write.table(NFI_plot_info,file=file.path(path_data,"plot_info.csv"),sep=";",row.names = F)
@@ -163,6 +171,10 @@ get_NFI<-function(dir=getwd(),
     write.table(NFI_flora,file=file.path(path_data,"flora.csv"),sep=";",row.names = F)
   }
 
+
+
+
+
   if(export_to_env){
     NFI_plot_info<<-NFI_plot_info[order(idp),]
     NFI_ecologie<<-NFI_ecologie[order(idp),]
@@ -171,6 +183,12 @@ get_NFI<-function(dir=getwd(),
     NFI_cover<<-NFI_cover[order(idp),]
     NFI_flora<<-NFI_flora[order(idp),]
   }
+
+
+  meta_data<-data.table(read.table(unz(path_zip,"metadonnees.csv"),sep=";",skip=17,fill=T,quote="",row.names = NULL,encoding = "UTF-8",stringsAsFactors =F))
+  write.table(meta_data,file=file.path(path_data,"meta_data_nfi.csv"),sep=";",row.names = F)
+
+
 
   if(!export_to_env)return(list(NFI_plot_info,NFI_ecologie,NFI_arbres,NFI_dendro,NFI_cover,NFI_flora)) else return(NULL)
 
