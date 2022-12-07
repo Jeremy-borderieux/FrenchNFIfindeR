@@ -102,7 +102,7 @@ get_NFI<-function(dir=getwd(),
   NFI_ecologie[,campagne:=NULL]
 
   # Imputation aux arbres simplifi?s de la valeur moyenne des mesures des arbres de la m?me placette, essences, et classe de taille
-  NFI_arbres[, dimess := cut(c13, breaks = c(0, 70.5, 117.5, 164.5, 1000), labels = c("PB", "BM", "GB", "TGB"), right = FALSE)]
+  NFI_arbres[, dimess := cut(c13, breaks = c(0, 70.5, 117.5, 164.5, 1000)/100, labels = c("PB", "BM", "GB", "TGB"), right = FALSE)]
   NFI_arbres[, htot := ifelse(is.na(htot), mean(htot, na.rm = TRUE), htot), by = c("idp", "espar", "dimess")]
   NFI_arbres[, ir5 := ifelse(is.na(ir5), mean(ir5, na.rm = TRUE), ir5), by = c("idp", "espar", "dimess")]
 
@@ -113,7 +113,7 @@ get_NFI<-function(dir=getwd(),
 
   ### Calcul des surfaces terri?res
   NFI_arbres[,gFinal:=c13*c13*w/(4*pi)]
-  NFI_arbres[,gInitial:=pi/10000*(c13/(2*pi)-ir5/10)^2*w]
+  NFI_arbres[,gInitial:=pi*(c13/(2*pi)-ir5/10)^2*w]
 
   ## selection arbres vivants pour la dendro
   NFI_arbres_vivants<-NFI_arbres[veget%in%c("0","Z"),]
