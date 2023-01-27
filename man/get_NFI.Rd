@@ -34,9 +34,9 @@ The raw downloaded data are stored inside the NFI_data/Raw_data folder
 The NFI is seperated into different csv files or R data.table, that you can merge by idp
 \itemize{
 \item{\strong{NFI_plot_info}}{ The metadata such as position, or time of measurment of a NFI plot, plot are identified with a unique ID called idp}
-\item{\strong{NFI_ecologie}}{ Informations regarding soil, understory cover observations}
-\item{\strong{NFI_arbres}}{ Living tree measurements and informations}
-\item{\strong{NFI_dendro}}{ Dendrologic variable computed with NFI_arbres}
+\item{\strong{NFI_ecology}}{ Informations regarding soil, understory cover observations}
+\item{\strong{NFI_tree}}{ Living tree measurements and informations}
+\item{\strong{NFI_dendro}}{ Dendrologic variable computed with NFI_tree}
 \item{\strong{NFI_cover}}{ Relative and absolute cover of every tree species recorded}
 \item{\strong{NFI_flora}}{ Florisitic surveys of the NFI plot}
 }
