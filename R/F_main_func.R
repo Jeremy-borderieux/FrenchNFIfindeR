@@ -1,6 +1,6 @@
 #' Get the latest url, copy it here
 #' @noRd
-get_latest_url<-function()return("https://inventaire-forestier.ign.fr/dataifn/data/export_dataifn_2021.zip")
+get_latest_url<-function()return("https://inventaire-forestier.ign.fr/dataifn/data/export_dataifn_2005_2022.zip")
 
 
 
