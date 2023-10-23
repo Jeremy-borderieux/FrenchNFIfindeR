@@ -4,6 +4,7 @@ get_latest_url<-function()return("https://inventaire-forestier.ign.fr/dataifn/da
 
 
 
+
 #' @title Download the latest NFI
 #' @details The raw downloaded data are stored inside the NFI_data/Raw_data folder
 #' @return The path to where the data have been downloaded
@@ -126,7 +127,7 @@ get_NFI<-function(dir=getwd(),
 
   ### Valeurs dendro ?chelle placette
   NFI_dendro <- NFI_tree_vivants[,.(basal_area=sum(gFinal),
-                              Ntot=sum(w)),  by = idp]
+                                    Ntot=sum(w)),  by = idp]
 
 
   NFI_dendro[, DgTotFinal:=sqrt(4*basal_area/(pi*Ntot))*100]
@@ -155,12 +156,16 @@ get_NFI<-function(dir=getwd(),
 
   NFI_tree<-merge(NFI_tree,tree_NFI_codetaxo[,c("espar","species_name","french_name")],by="espar",all.x = T)
   NFI_tree<-NFI_tree[veget!="",]
-  # NFI_plot_info<<-NFI_plot_info[order(idp),]
-  # NFI_ecology<<-NFI_ecology[order(idp),]
-  # NFI_tree<<-NFI_tree[order(idp),]
-  # NFI_dendro<<-NFI_dendro[order(idp),]
-  # NFI_cover<<-NFI_cover[order(idp),]
-  # NFI_flora<<-NFI_flora[order(idp),]
+
+  NFI_cover<-merge(NFI_cover,tree_NFI_codetaxo[,c("espar","species_name","french_name")],by.x="espar_c",by.y="espar",all.x = T)
+
+
+  NFI_NR_tree<-NFI_cover[strate=="NR",]
+  NFI_NR_tree[,cd_ref:=NA]
+  NFI_NR_tree[,abond:=1] # can be better
+  NFI_NR_tree<-NFI_NR_tree[,c("cd_ref","campagne","idp","abond","species_name")]
+
+  NFI_flora<-rbind(NFI_flora,NFI_NR_tree)
 
   if(write_csv){
     write.table(NFI_plot_info,file=file.path(path_data,"plot_info.csv"),sep=";",row.names = F)
@@ -169,7 +174,8 @@ get_NFI<-function(dir=getwd(),
     write.table(NFI_dendro,file=file.path(path_data,"dendro.csv"),sep=";",row.names = F)
     write.table(NFI_cover,file=file.path(path_data,"canopy_cover.csv"),sep=";",row.names = F)
     write.table(NFI_flora,file=file.path(path_data,"flora.csv"),sep=";",row.names = F)
-  }
+
+    }
 
 
 
@@ -215,9 +221,9 @@ compute_dendro_sp<- function (NFI_tree, species_name) {
   tmp$ba<-ifelse(tmp$espar==species_name,tmp$gFinal,0)
   tmp$wtot<-ifelse(tmp$espar==species_name,tmp$w,0)
 
-   tmp <- tmp[,list(basal_area=sum(ba,na.rm=T),
-                     Ntot=sum(wtot,na.rm=T)),
-                    by = idp]
+  tmp <- tmp[,list(basal_area=sum(ba,na.rm=T),
+                   Ntot=sum(wtot,na.rm=T)),
+             by = idp]
   # tmp<-NFI_tree
   # tmp[,basal_area:=]
 
