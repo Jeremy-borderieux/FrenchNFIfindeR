@@ -147,25 +147,36 @@ get_NFI<-function(dir=getwd(),
   flora_taxo[,value:=as.numeric(value)]
 
   NFI_flora<-merge(NFI_flora,flora_taxo[,c("value","species_name")],by.x="cd_ref",by.y="value")
-
+  NFI_flora[,source:="Flora_surveys"]
 
 
   tree_NFI_codetaxo<-data.table(read.table(unz(path_zip,"espar-cdref13.csv"),sep=";",quote="",skip=1,row.names = NULL,encoding = "UTF-8",stringsAsFactors =F))
   colnames(tree_NFI_codetaxo)<-c("espar","french_name","cd_ref","species_name")
   tree_NFI_codetaxo[,espar:=ifelse(nchar(espar)==1,paste0("0",espar),espar)]
 
-  NFI_tree<-merge(NFI_tree,tree_NFI_codetaxo[,c("espar","species_name","french_name")],by="espar",all.x = T)
+  NFI_tree<-merge(NFI_tree,tree_NFI_codetaxo[,c("espar","cd_ref","species_name","french_name")],by="espar",all.x = T)
   NFI_tree<-NFI_tree[veget!="",]
 
-  NFI_cover<-merge(NFI_cover,tree_NFI_codetaxo[,c("espar","species_name","french_name")],by.x="espar_c",by.y="espar",all.x = T)
+  NFI_tree_for_flora<-NFI_tree[,.N,by=.(campagne,idp,cd_ref,species_name)]
+  NFI_tree_for_flora[,abond:=1]
+  NFI_tree_for_flora[,source:="Trees_R"]
+
+  NFI_tree_for_flora<-NFI_tree_for_flora[,c("cd_ref","campagne","idp","abond","species_name","source")]
+
+
+
+  NFI_cover<-merge(NFI_cover,tree_NFI_codetaxo[,c("espar","cd_ref","species_name","french_name")],by.x="espar_c",by.y="espar",all.x = T)
 
 
   NFI_NR_tree<-NFI_cover[strate=="NR",]
-  NFI_NR_tree[,cd_ref:=NA]
   NFI_NR_tree[,abond:=1] # can be better
-  NFI_NR_tree<-NFI_NR_tree[,c("cd_ref","campagne","idp","abond","species_name")]
+  NFI_NR_tree[,source:="Cover_NR"]
 
-  NFI_flora<-rbind(NFI_flora,NFI_NR_tree)
+  NFI_NR_tree<-NFI_NR_tree[,c("cd_ref","campagne","idp","abond","species_name","source")]
+
+  NFI_flora<-rbind(NFI_flora,NFI_NR_tree,NFI_tree_for_flora)
+
+
 
   if(write_csv){
     write.table(NFI_plot_info,file=file.path(path_data,"plot_info.csv"),sep=";",row.names = F)
