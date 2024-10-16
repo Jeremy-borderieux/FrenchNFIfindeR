@@ -174,8 +174,8 @@ get_NFI<-function(dir=getwd(),
 
   NFI_NR_tree<-NFI_NR_tree[,c("cd_ref","campagne","idp","abond","species_name","source")]
 
-  NFI_flora<-rbind(NFI_flora,NFI_NR_tree,NFI_tree_for_flora)
-
+  NFI_flora <- rbindlist(list(NFI_flora,NFI_NR_tree,NFI_tree_for_flora),
+                         fill = T)
 
 
   if(write_csv){
